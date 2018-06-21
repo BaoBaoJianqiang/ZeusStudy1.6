@@ -1,0 +1,62 @@
+apply plugin: 'com.android.application'
+
+import com.android.sdklib.BuildToolInfo
+import java.lang.reflect.Method
+
+Task modifyAaptPathTask = task('modifyAaptPath') << {
+    android.applicationVariants.all { variant ->
+        BuildToolInfo buildToolInfo = variant.androidBuilder.getTargetInfo().getBuildTools()
+        Method addMethod = BuildToolInfo.class.getDeclaredMethod("add", BuildToolInfo.PathId.class, File.class)
+        addMethod.setAccessible(true)
+        addMethod.invoke(buildToolInfo, BuildToolInfo.PathId.AAPT, new File(rootDir, "aapt_mac"))
+        println "[LOG] new aapt path = " + buildToolInfo.getPath(BuildToolInfo.PathId.AAPT)
+    }
+}
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+
+    defaultConfig {
+        applicationId "jianqiang.com.plugin1"
+        minSdkVersion 21
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    preBuild.doFirst {
+        modifyAaptPathTask.execute()
+    }
+
+    aaptOptions {
+        aaptOptions.additionalParameters '--PLUG-resoure-id', '0x71'
+    }
+
+    dexOptions {
+        javaMaxHeapSize "4g"
+        preDexLibraries = false
+
+        additionalParameters += '--multi-dex'
+        additionalParameters += '--main-dex-list=maindexlist.txt'
+        additionalParameters += '--minimal-main-dex'
+        additionalParameters += '--set-max-idx-number=20000'
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile project(path: ':mypluginlibrary')
+}
