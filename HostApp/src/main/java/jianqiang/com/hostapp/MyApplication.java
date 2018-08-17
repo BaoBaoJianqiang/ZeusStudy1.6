@@ -29,7 +29,7 @@ public class MyApplication extends Application {
 
         try {
             AMSHookHelper.hookAMN();
-            AMSHookHelper.hookActivityThread();
+            AMSHookHelper.attachContext();
         } catch (Throwable e) {
             e.printStackTrace();
         }
